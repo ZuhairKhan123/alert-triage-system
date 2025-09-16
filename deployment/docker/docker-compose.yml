@@ -1,0 +1,170 @@
+# Alert Triage System - Docker Compose Configuration
+version: '3.8'
+
+services:
+  # Main Alert Triage Application
+  alert-triage:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile
+      target: development
+    container_name: alert-triage-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Webhook server
+      - "8081:8081"  # REST API
+      - "9090:9090"  # Prometheus metrics
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=postgres
+      - PROMETHEUS_PORT=9090
+      # Override with .env file
+    env_file:
+      - .env
+    volumes:
+      - ../../src:/app/src:ro
+      - ../../config:/app/config:ro
+      - ../../data:/app/data
+      - alert-logs:/app/logs
+    depends_on:
+      - redis
+      - postgres
+      - prometheus
+    networks:
+      - alert-triage-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching and queuing
+  redis:
+    image: redis:7-alpine
+    container_name: alert-triage-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-alerttriage123}
+    volumes:
+      - redis-data:/data
+    networks:
+      - alert-triage-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # PostgreSQL for persistent data
+  postgres:
+    image: postgres:15-alpine
+    container_name: alert-triage-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alert_triage}
+      POSTGRES_USER: ${POSTGRES_USER:-alerttriage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alerttriage123}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - alert-triage-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alerttriage} -d ${POSTGRES_DB:-alert_triage}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: alert-triage-prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ../../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - alert-triage-network
+    depends_on:
+      - alert-triage
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: alert-triage-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - alert-triage-network
+    depends_on:
+      - prometheus
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: alert-triage-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - alert-triage
+    networks:
+      - alert-triage-network
+    profiles:
+      - production
+
+  # Testing tools
+  webhook-tester:
+    image: curlimages/curl:latest
+    container_name: webhook-tester
+    command: sleep infinity
+    networks:
+      - alert-triage-network
+    profiles:
+      - testing
+
+volumes:
+  alert-logs:
+    name: alert-triage-logs
+  redis-data:
+    name: alert-triage-redis-data
+  postgres-data:
+    name: alert-triage-postgres-data
+  prometheus-data:
+    name: alert-triage-prometheus-data
+  grafana-data:
+    name: alert-triage-grafana-data
+
+networks:
+  alert-triage-network:
+    name: alert-triage-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

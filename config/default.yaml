@@ -1,0 +1,276 @@
+# Alert Triage System - Default Configuration
+
+# Application metadata
+app:
+  name: "Alert Triage System"
+  version: "1.0.0"
+  description: "Intelligent security alert triage using Coral Protocol"
+
+# Logging configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: logs/alert_triage.log
+  structured: false
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+  module_levels:
+    asyncio: WARNING
+    aiohttp: WARNING
+    urllib3: WARNING
+
+# Coral Protocol settings
+coral_protocol:
+  max_message_history: 1000
+  heartbeat_interval: 30
+  message_timeout: 60
+  max_queue_size: 1000
+
+# Agent configurations
+agents:
+  alert_receiver:
+    max_queue_size: 1000
+    supported_systems:
+      - splunk
+      - qradar
+      - sentinel
+      - edr
+      - ids
+      - firewall
+      - email_security
+      - web_proxy
+      - antivirus
+      - custom
+    
+  false_positive_checker:
+    confidence_threshold: 0.7
+    enable_ml_analysis: true
+    ml_model_path: data/models/false_positive_model.pkl
+    trusted_ips:
+      - 10.0.0.1
+      - 192.168.1.1
+      - 10.0.0.100
+    test_accounts:
+      - test_user
+      - qa_account
+      - service_account
+      
+  severity_analyzer:
+    enable_dynamic_scoring: true
+    escalation_threshold: 0.8
+    critical_assets:
+      - domain_controller
+      - file_server
+      - database_server
+      - email_server
+    high_privilege_indicators:
+      - admin
+      - administrator
+      - root
+      - sa
+      
+  context_gatherer:
+    threat_intel_enabled: true
+    user_context_enabled: true
+    network_context_enabled: true
+    historical_analysis_enabled: true
+    context_timeout: 30
+    
+  response_coordinator:
+    auto_escalation_threshold: 0.8
+    enable_automation: true
+    default_assignment_tier: tier1_analyst
+    soar_enabled: false
+    
+  workflow_orchestrator:
+    workflow_timeout: 300
+    max_concurrent_workflows: 100
+    default_template: standard_triage
+
+# External integrations
+integrations:
+  siem:
+    enabled: false
+    type: splunk  # splunk, qradar, sentinel, arcsight
+    endpoint: ""
+    api_key: ""
+    verify_ssl: true
+    timeout: 30
+    
+  soar:
+    enabled: false
+    type: phantom  # phantom, demisto, resilient, swimlane
+    endpoint: ""
+    api_key: ""
+    verify_ssl: true
+    timeout: 30
+    
+  threat_intel:
+    enabled: false
+    providers:
+      virustotal:
+        enabled: false
+        api_key: ""
+        rate_limit: 4  # requests per minute
+      misp:
+        enabled: false
+        url: ""
+        key: ""
+        verify_ssl: true
+      otx:
+        enabled: false
+        api_key: ""
+
+# API settings
+api:
+  webhook:
+    enabled: true
+    host: 0.0.0.0
+    port: 8080
+    secret: ""
+    require_auth: false
+    max_payload_size: 1048576  # 1MB
+    
+  rest:
+    enabled: true
+    host: 0.0.0.0
+    port: 8081
+    require_auth: false
+    cors_enabled: true
+    
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 1000
+    burst_size: 100
+
+# Security settings
+security:
+  api_key_required: false
+  jwt_secret: ""
+  token_expiry: 3600  # 1 hour
+  allowed_origins:
+    - "http://localhost:3000"
+    - "https://your-domain.com"
+  encryption:
+    enabled: false
+    algorithm: "AES-256-GCM"
+    key: ""
+
+# Metrics and monitoring
+metrics:
+  enabled: true
+  prometheus_port: 9090
+  collection_interval: 60
+  retention_period: 86400  # 24 hours
+  
+monitoring:
+  health_check_interval: 60
+  alert_on_failure: true
+  performance_monitoring: true
+  audit_logging: true
+
+# Database settings (for future use)
+database:
+  enabled: false
+  type: postgresql  # postgresql, mysql, sqlite
+  host: localhost
+  port: 5432
+  name: alert_triage
+  username: ""
+  password: ""
+  pool_size: 10
+  max_connections: 100
+
+# Caching settings
+cache:
+  enabled: true
+  type: memory  # memory, redis, memcached
+  ttl: 3600  # 1 hour
+  max_size: 1000
+  
+  redis:
+    host: localhost
+    port: 6379
+    db: 0
+    password: ""
+
+# Queue settings (for high-volume deployments)
+queue:
+  enabled: false
+  type: redis  # redis, rabbitmq, kafka
+  host: localhost
+  port: 6379
+  name: alert_queue
+  
+# ML/AI settings
+ml:
+  enabled: false
+  model_path: data/models/
+  training_enabled: false
+  auto_retrain: false
+  confidence_threshold: 0.8
+  
+  models:
+    false_positive:
+      path: data/models/false_positive_model.pkl
+      version: "1.0"
+      last_trained: ""
+    severity:
+      path: data/models/severity_model.pkl
+      version: "1.0" 
+      last_trained: ""
+
+# Notification settings
+notifications:
+  enabled: false
+  channels:
+    email:
+      enabled: false
+      smtp_host: ""
+      smtp_port: 587
+      username: ""
+      password: ""
+      from_address: ""
+    slack:
+      enabled: false
+      webhook_url: ""
+      channel: "#security-alerts"
+    teams:
+      enabled: false
+      webhook_url: ""
+
+# Backup and recovery
+backup:
+  enabled: false
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  storage_path: backups/
+  
+# Performance tuning
+performance:
+  worker_processes: 4
+  max_concurrent_tasks: 100
+  task_timeout: 300
+  memory_limit: "512MB"
+  cpu_limit: "2.0"
+  
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    recovery_timeout: 60
+    
+# Development settings
+development:
+  debug: false
+  hot_reload: false
+  mock_integrations: true
+  sample_data_enabled: true
+  test_mode: false
+
+# Feature flags
+features:
+  advanced_analytics: false
+  ai_recommendations: false
+  automated_response: true
+  threat_hunting: false
+  compliance_reporting: false
