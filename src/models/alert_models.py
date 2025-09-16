@@ -177,6 +177,16 @@ class UserContext:
     failed_login_count_24h: int = 0
     is_service_account: bool = False
     recent_activities: List[str] = field(default_factory=list)
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization"""
+        result = {}
+        for field_name, field_value in self.__dict__.items():
+            if isinstance(field_value, datetime.datetime):
+                result[field_name] = field_value.isoformat()
+            else:
+                result[field_name] = field_value
+        return result
+
 
 
 @dataclass
@@ -236,6 +246,17 @@ class IncidentTicket:
     updated_time: Optional[datetime.datetime] = None
     soar_platform: str = "unknown"
     external_url: Optional[str] = None
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization"""
+        result = {}
+        for field_name, field_value in self.__dict__.items():
+            if isinstance(field_value, datetime.datetime):
+                result[field_name] = field_value.isoformat()
+            elif isinstance(field_value, Enum):
+                result[field_name] = field_value.value
+            else:
+                result[field_name] = field_value
+        return result
 
 
 # Validation functions

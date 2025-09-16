@@ -5,7 +5,7 @@ Response Coordinator Agent - Determines and coordinates appropriate response act
 import datetime
 import uuid
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 from coral_protocol import CoralAgent, AgentCapability, CoralMessage, MessageType
 from models.alert_models import (
