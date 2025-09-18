@@ -3,19 +3,38 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.so
+*.dll
+*.log
+*.tmp
 *.swp
+*.swo
 
 # Virtual environments
 .venv/
-env/
 venv/
+env/
+.venv/*
 
-# IDEs
+# Dependency/build artifacts
+build/
+dist/
+*.egg-info/
+
+# Test/coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE/editors
 .vscode/
 .idea/
+*.code-workspace
 
-# Logs
-*.log
+# OS-specific
+.DS_Store
+Thumbs.db
 
-# Config
-config/*.yaml  # if you have secrets here, or use example files
+# Env/config
+.env
+.env.*

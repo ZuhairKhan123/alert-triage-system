@@ -192,7 +192,7 @@ async def get_metrics():
     global system_instance
     
     if system_instance:
-        return system_instance.get_metrics()
+        return await system_instance.metrics.get_system_metrics()
     else:
         return {"error": "System not available"}
 
